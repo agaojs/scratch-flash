@@ -116,7 +116,7 @@ public class ScratchStage extends ScratchObj {
 		else {
 			addChild(counter);
 		}
-		addChild(arrowText=makeLabel("To stop recording, click the square",14));
+		addChild(arrowText=makeLabel("点击小方块停止录像",14));
 		arrowImage = Resources.createBmp('stopArrow');
 		arrowImage.x = 6;
 		arrowImage.y = 335;
@@ -275,7 +275,7 @@ public class ScratchStage extends ScratchObj {
 
 	public function menu(evt:MouseEvent):Menu {
 		var m:Menu = new Menu();
-		m.addItem('save picture of stage', saveScreenshot);
+		m.addItem('保存舞台截屏', saveScreenshot);
 		return m;
 	}
 	

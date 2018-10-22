@@ -36,6 +36,8 @@ import ui.parts.UIPart;
 import uiwidgets.*;
 
 public class DrawPropertyUI extends Sprite {
+	
+	public var app:Scratch;
 
 	public static const ONCHANGE:String = 'onchange';
 	public static const ONCOLORCHANGE:String = 'oncolorchange';
@@ -346,9 +348,14 @@ public class DrawPropertyUI extends Sprite {
 			m.addItem('Marker');
 			m.addItem('Mystery');
 			m.addItem('Scratch');
+			m.addItem("Arial");
+			m.addItem('微软雅黑');
+			m.addItem('仿宋');
+			m.addItem('黑体');
 			m.showOnStage(Scratch.app.stage);
 		}
 		function fontSelected(fontName:String):void {
+			Scratch.app.logMessage("font selected:", fontName);
 			updateFontUI(fontName);
 			currentValues.fontName = fontName;
 			if (!disableEvents) dispatchEvent(new Event(ONFONTCHANGE));

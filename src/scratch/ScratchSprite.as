@@ -466,7 +466,7 @@ public class ScratchSprite extends ScratchObj {
 
 	public function menu(evt:MouseEvent):Menu {
 		var m:Menu = new Menu();
-		m.addItem('info', showDetails);
+		m.addItem('信息', showDetails);
 		m.addLine();
 		m.addItem('duplicate', duplicateSprite);
 		m.addItem('delete', deleteSprite);

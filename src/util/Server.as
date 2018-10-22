@@ -52,7 +52,7 @@ import mx.utils.URLUtil;
 
 public class Server implements IServer {
 
-	protected var URLs:Object = {};
+	public var URLs:Object = {};
 
 	public function Server() {
 		setDefaultURLs();
@@ -264,6 +264,7 @@ public class Server implements IServer {
 //			return null;
 //		}
 		var url:String = URLs.assetCdnPrefix + URLs.internalAPI + 'asset/' + md5 + '/get/';
+		var url:String = URLs.assetCdnPrefix + URLs.internalAPI + 'asset/' + md5;
 		return serverGet(url, whenDone);
 	}
 

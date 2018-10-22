@@ -34,15 +34,21 @@ package ui.parts {
 	import flash.display.Sprite;
 	import flash.geom.Matrix;
 	import flash.text.*;
+	
+	import scratch.ScratchRuntime;
+	
 	import translation.Translator;
+	
 	import uiwidgets.IconButton;
- 	import util.DrawPath;
+	
+	import util.DrawPath;
 
 public class UIPart extends Sprite {
 
 	protected static const cornerRadius:int = 8;
 
 	public var app:Scratch;
+	public var runtime:ScratchRuntime;
 	public var w:int, h:int;
 
 	public function right():int { return x + w }

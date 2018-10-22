@@ -74,6 +74,7 @@ public class Resources {
 	[Embed(source='fonts/MysteryQuest-Regular.ttf', fontName='Mystery', embedAsCFF = 'false', advancedAntiAliasing = 'true')] private static const Font4:Class;
 	[Embed(source='fonts/PermanentMarker.ttf', fontName='Marker', embedAsCFF = 'false', advancedAntiAliasing = 'true')] private static const Font5:Class;
 	[Embed(source='fonts/Scratch.ttf', fontName='Scratch', embedAsCFF = 'false', advancedAntiAliasing = 'true')] private static const Font6:Class;
+	
 
 	// Block Icons (2x resolution to look better when scaled)
 	[Embed(source='blocks/flagIcon.png')] private static const flagIcon:Class;
@@ -109,6 +110,8 @@ public class Resources {
 	[Embed(source='UI/topbar/projectPageFlip.png')] private static const projectPageFlip:Class;
 	[Embed(source='UI/topbar/openInScratch.png')] private static const openInScratch:Class;
 	[Embed(source='UI/topbar/shrinkTool.png')] private static const shrinkTool:Class;
+	
+	[Embed(source='UI/topbar/submit.png')] private static const submit:Class;
 
 	// Buttons
 	[Embed(source='UI/buttons/addItemOff.gif')] private static const addItemOff:Class;

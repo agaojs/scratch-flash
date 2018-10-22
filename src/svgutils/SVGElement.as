@@ -244,11 +244,15 @@ public class SVGElement {
 			(getAttribute('font-style') == 'italic')
 		);
 		if (useEmbeddedFont) {
-			if (!hasEmbeddedFont(fmt.font)) {
-				setAttribute('font-family', 'Helvetica');
-				fmt.font = 'Helvetica';
+			if (/[^\x00-\xff]/g.test(text) && !/[^\x00-\xff]/g.test(attributes["font-family"]))
+			{
+				attributes["font-family"] = "微软雅黑";
 			}
-			tf.embedFonts = true;
+			if (!hasEmbeddedFont(fmt.font)) {
+				tf.embedFonts = false;
+			}else{
+				tf.embedFonts = true;
+			}
 			tf.antiAliasType = AntiAliasType.ADVANCED;
 		}
 		tf.defaultTextFormat = fmt;

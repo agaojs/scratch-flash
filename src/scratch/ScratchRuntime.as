@@ -21,28 +21,56 @@
 // John Maloney, September 2010
 
 package scratch {
+import com.adobe.utils.StringUtil;
+import by.blooddy.crypto.serialization.JSON;
+import flash.display.Bitmap;
+import flash.display.BitmapData;
+import flash.display.DisplayObject;
+import flash.display.Sprite;
+import flash.events.AsyncErrorEvent;
+import flash.events.ErrorEvent;
+import flash.events.Event;
+import flash.events.IOErrorEvent;
+import flash.events.KeyboardEvent;
+import flash.events.SampleDataEvent;
+import flash.events.StatusEvent;
+import flash.events.TimerEvent;
+import flash.events.SecurityErrorEvent;
+import flash.geom.Matrix;
+import flash.geom.Point;
+import flash.geom.Rectangle;
+import flash.media.Microphone;
+import flash.media.SoundTransform;
+import flash.net.FileFilter;
+import flash.net.FileReference;
+import flash.net.URLLoader;
+import flash.net.URLLoaderDataFormat;
+import flash.net.URLRequest;
+import flash.net.URLRequestHeader;
+import flash.net.URLRequestMethod;
+import flash.system.System;
+import flash.text.TextField;
+import flash.ui.Keyboard;
+import flash.utils.ByteArray;
+import flash.utils.Timer;
+import flash.utils.clearTimeout;
+import flash.utils.getTimer;
+import flash.utils.setTimeout;
+import flash.utils.Endian;
+
 import assets.Resources;
 
 import blocks.Block;
 import blocks.BlockArg;
-
+//ffv
+import com.rainbowcreatures.swf.*;
 import extensions.ExtensionManager;
 
-import flash.display.*;
-import flash.events.*;
-import flash.geom.Matrix;
-import flash.geom.Point;
-import flash.geom.Rectangle;
-import flash.media.*;
-import flash.net.*;
-import flash.system.System;
-import flash.text.TextField;
-import flash.ui.Keyboard;
-import flash.utils.*;
+import interpreter.Interpreter;
+import interpreter.Variable;
 
-import interpreter.*;
-
-import leelib.util.flvEncoder.*;
+import leelib.util.flvEncoder.ByteArrayFlvEncoder;
+import leelib.util.flvEncoder.FlvEncoder;
 
 import logging.LogLevel;
 
@@ -50,7 +78,7 @@ import primitives.VideoMotionPrims;
 
 import sound.ScratchSoundPlayer;
 
-import translation.*;
+import translation.Translator;
 
 import ui.BlockPalette;
 import ui.RecordingSpecEditor;
@@ -59,24 +87,22 @@ import ui.media.MediaInfo;
 
 import uiwidgets.DialogBox;
 
-import util.*;
+import util.ObjReader;
+import util.OldProjectReader;
+import util.ProjectIO;
+import util.Server;
+import util.UUID;
+import util.UploadPostHelper;
 
-import watchers.*;
+import watchers.ListWatcher;
+import watchers.Watcher;
 
 public class ScratchRuntime {
-
-	// Scratch uses these pseudo-Unicode values to map arrow keys as if they were printable characters.
-	// Changing these values may break compatibility with existing projects using "hacked" keypress blocks.
-	private static const SCRATCH_ARROW_LEFT:int = 28; // file separator
-	private static const SCRATCH_ARROW_RIGHT:int = 29; // record separator
-	private static const SCRATCH_ARROW_UP:int = 30; // group separator
-	private static const SCRATCH_ARROW_DOWN:int = 31; // unit separator
 
 	public var app:Scratch;
 	public var interp:Interpreter;
 	public var motionDetector:VideoMotionPrims;
 	public var keyIsDown:Array = []; // sparse array recording key up/down state
-	public var shiftIsDown:Boolean;
 	public var lastAnswer:String = '';
 	public var cloneCount:int;
 	public var edgeTriggersEnabled:Boolean = false; // initially false, becomes true when project first run
@@ -84,7 +110,15 @@ public class ScratchRuntime {
 
 	private var microphone:Microphone;
 	private var timerBase:uint;
+	
+	private var framesAudioData:* = [];
+	private var framesVideoData:* = [];
+	private var currentEncodedIndex:int = 0;
 
+	
+	//flv encode
+	private var myEncoder:FWVideoEncoder;
+	
 	protected var projectToInstall:ScratchStage;
 	protected var saveAfterInstall:Boolean;
 
@@ -93,13 +127,20 @@ public class ScratchRuntime {
 		this.interp = interp;
 		timerBase = interp.currentMSecs;
 		clearKeyDownArray();
+		
+		//add
+		myEncoder = FWVideoEncoder.getInstance(app);
+		myEncoder.addEventListener(StatusEvent.STATUS, onStatus);
 	}
 
 	// -----------------------------
 	// Running and stopping
 	//------------------------------
-
 	public function stepRuntime():void {
+		var bmd:BitmapData;
+		var bounds:Rectangle;
+		var pixels:ByteArray;
+		
 		if (projectToInstall != null && (app.isOffline || app.isExtensionDevMode)) {
 			installProject(projectToInstall);
 			if (saveAfterInstall) app.setSaveNeeded(true);
@@ -112,6 +153,7 @@ public class ScratchRuntime {
 			while (t>videoSounds.length/videoFramerate+1/videoFramerate) {
 				saveSound();
 			}
+			//count down 
 			var count:int = 3;
 			if (tR>=3.75){
 				ready = ReadyLabel.READY;
@@ -134,8 +176,9 @@ public class ScratchRuntime {
 				app.refreshStagePart();
 			}
 		}
-		if (recording) { // Recording a YouTube video?
+		if (recording) {
 			var t:Number = getTimer()*.001-videoSeconds;
+			//			低质量录像
 			//If, based on time and framerate, the current frame needs to be in the video, capture the frame.
 			//Will always be true if framerate is 30, as every frame is captured.
 			if (t>videoSounds.length/videoFramerate+1/videoFramerate) {
@@ -143,8 +186,7 @@ public class ScratchRuntime {
 				//saves visual frame to frames and sound clip to sounds
 				saveFrame();
 				app.updateRecordingTools(t);
-			}
-			else {
+			}else {
 				//Will only run in low quality or full editor mode, when this frame isn't captured for video
 				//To reduce lag in low quality mode and full editor mode, video frames are only written
 				//to the file if a new frame isn't being captured and the total number of frames captured so far
@@ -152,18 +194,56 @@ public class ScratchRuntime {
 				//Some frames will be written to the file after recording has finished.
 				app.updateRecordingTools(t);
 				if (videoFrames.length>videoPosition && (videoFrames.length%2==0 || videoFrames.length%3==0)) {
-					baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
+					
+//					baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
 					//forget about frame just written
+					//						Scratch.app.log(LogLevel.TRACK, "low video length",{videos: videoFrames, position:videoPosition})
+					//						Scratch.app.log(LogLevel.TRACK, "low sounds length",{sounds: videoSounds, position:videoPosition});
+					
+					bmd = videoFrames[videoPosition];
+					bounds = new Rectangle(0,0,bmd.width,bmd.height);
+					pixels = bmd.getPixels(bounds);
+					videoSounds[videoPosition].position = 0;
+					try
+					{
+						this.framesAudioData.push(videoSounds[videoPosition]);
+						this.framesVideoData.push(pixels);
+					}
+					catch(error:Error)
+					{
+						DialogBox.close("runtime error",error.message,null,"ok",app.stage,null,null,null,false);
+						
+					}
+					
 					videoFrames[videoPosition]=null;
 					videoSounds[videoPosition]=null;
 					videoPosition++;
 				}
 			}
+			//			高质量录像
 			//For a high quality video, every frame is immediately written to the video file
 			//after being captured, to reduce memory.
 			if (videoFrames.length>videoPosition && videoFramerate==30.0) {
-				baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
+				
+//				baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
 				//forget about frame just written
+				
+				Scratch.app.log(LogLevel.TRACK, "high sounds length",{sounds: videoSounds});
+				
+				bmd = videoFrames[videoPosition];
+				bounds = new Rectangle(0,0,bmd.width,bmd.height);
+				pixels = bmd.getPixels(bounds);
+				videoSounds[videoPosition].position = 0;
+				try
+				{
+					this.framesAudioData.push(videoSounds[videoPosition]);
+					this.framesVideoData.push(pixels);
+				}
+				catch(error:Error)
+				{
+					DialogBox.close("runtime error",error.message,null,"ok",app.stage,null,null,null,false);					
+				}
+				
 				videoFrames[videoPosition]=null;
 				videoSounds[videoPosition]=null;
 				videoPosition++;
@@ -171,10 +251,10 @@ public class ScratchRuntime {
 		}
 		app.extensionManager.step();
 		if (motionDetector) motionDetector.step(); // Video motion detection
-
+		
 		// Step the stage, sprites, and watchers
 		app.stagePane.step(this);
-
+		
 		// run scripts and commit any pen strokes
 		processEdgeTriggeredHats();
 		interp.stepThreads();
@@ -184,8 +264,9 @@ public class ScratchRuntime {
 			app.stagePane.countdown(count);
 		}
 	}
+	
 
-//-------- recording video code ---------
+	//-------- recording video code ---------
 	public var recording:Boolean;
 	private var videoFrames:Array = [];
 	private var videoSounds:Array = [];
@@ -323,6 +404,7 @@ public class ScratchRuntime {
 			}
 		}
 		var combinedStream:ByteArray = new ByteArray();
+		combinedStream.endian = Endian.LITTLE_ENDIAN;
 		for each (var n:Number in floats) {
 			combinedStream.writeFloat(n);
 		}
@@ -333,22 +415,23 @@ public class ScratchRuntime {
 	
 	private function micSampleDataHandler(event:SampleDataEvent):void 
 	{ 
-	    while(event.data.bytesAvailable) 
-	    {
-	        var sample:Number = event.data.readFloat(); 
-	        micBytes.writeFloat(sample);  
-	        micBytes.writeFloat(sample);
-	    } 
+		while(event.data.bytesAvailable) 
+		{
+			var sample:Number = event.data.readFloat(); 
+			micBytes.writeFloat(sample);  
+			micBytes.writeFloat(sample);
+		} 
 	} 
 	
+	//开始录像
 	public function startVideo(editor:RecordingSpecEditor):void {
 		projectSound = editor.soundFlag();
 		micSound = editor.microphoneFlag();
 		fullEditor = editor.editorFlag();
 		showCursor = editor.cursorFlag();
-		videoFramerate = (!editor.fifteenFlag()) ? 15.0 : 30.0;
+		videoFramerate = (!editor.fifteenFlag()) ? 10 : 5.0;
 		if (fullEditor) {
-			videoFramerate=10.0;
+			videoFramerate=5.0;
 		}
 		micReady = true;
 		if (micSound) {
@@ -385,7 +468,10 @@ public class ScratchRuntime {
 		baFlvEncoder.setVideoProperties(videoWidth, videoHeight);
 		baFlvEncoder.setAudioProperties(FlvEncoder.SAMPLERATE_44KHZ, true, true, true);
 		baFlvEncoder.start();
-		waitAndStart();
+		//waitAndStart();
+		//		加载编码器	
+		this.myEncoder.load(new Server().URLs['mp4']);
+		
 	}
 	
 	public function exportToVideo():void {
@@ -393,7 +479,7 @@ public class ScratchRuntime {
 		function startCountdown():void {
 			startVideo(specEditor);
 		}
-		DialogBox.close("Record Project Video",null,specEditor,"Start",app.stage,startCountdown);
+		DialogBox.close("录制视频",null,specEditor,"开始",app.stage,startCountdown);
 	}
 	
 	public function stopVideo():void {
@@ -408,7 +494,7 @@ public class ScratchRuntime {
 	public function finishVideoExport(event:TimerEvent):void {
 		stopRecording();
 		stopAll();
-		app.addLoadProgressBox("Writing video to file...");
+		app.addLoadProgressBox("正在生成录像...");
 		videoAlreadyDone = videoPosition;
 		clearTimeout(timeout);
 		timeout = setTimeout(saveRecording,1);
@@ -459,6 +545,8 @@ public class ScratchRuntime {
 		recording = false;
 		videoFrames = [];
 		videoSounds = [];
+		this.framesAudioData = [];
+		this.framesVideoData = [];
 		micBytes = new ByteArray();
 		micPosition=0;
 		videoPosition=0;
@@ -466,15 +554,119 @@ public class ScratchRuntime {
 		ready=ReadyLabel.NOT_READY;
 		trace('mem: ' + System.totalMemory);
 	}
-
+	public function onStatus(event:StatusEvent) : void
+	{
+		var video:ByteArray = null;
+		var saveAndUploadFile:Function = null;
+		video = null;
+		if(event.code == "ready")
+		{
+			waitAndStart();
+			myEncoder.start(videoFramerate,FWVideoEncoder.AUDIO_STEREO,false,videoWidth,videoHeight,1000000,44100,128000);
+			myEncoder.setAudioRealtime(true);
+		}
+		if(event.code == "encoded")
+		{
+			saveAndUploadFile = function():void
+			{
+				app.checkUUID();
+				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, uuid: app.uuid, projname: app.projectName()});
+				
+				var posturl:String = new Server().URLs['siteAPI'] + "upload";
+				
+				var parameters:Object = new Object();  
+				parameters["uuid"] = app.uuid;
+				parameters["ftype"] = 3;
+				parameters["project"] = app.projectName();
+				
+				var requestData:URLRequest = new URLRequest(posturl);
+				requestData.data = UploadPostHelper.getPostData(app.uuid, video, "file", parameters); 
+				requestData.method = URLRequestMethod.POST;
+				requestData.contentType = 'multipart/form-data; boundary=' + UploadPostHelper.getBoundary();
+				requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache")];
+				
+				var loader:URLLoader = new URLLoader(); 
+				loader.dataFormat = URLLoaderDataFormat.BINARY;
+				
+				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
+					
+//					var res:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+					app.externalCall("videoUploaded",null, app.uuid);
+					DialogBox.close("提示","上传成功",null,"关闭");	
+//					app.log(LogLevel.TRACK,"响应",loader.data);
+//					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+							
+				});
+				
+				app.saveScreenshot();
+				
+				var onError:* = function(e:Event):void
+				{
+					app.externalCall("showDialog", null, "error",2, e);
+					DialogBox.close("错误","请重试\n" + e,null,"重试",app.stage,saveAndUploadFile,null,null,true);
+				};
+				loader.addEventListener(ErrorEvent.ERROR,onError);
+				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR,onError);
+				loader.addEventListener(IOErrorEvent.IO_ERROR,onError);
+				loader.addEventListener(AsyncErrorEvent.ASYNC_ERROR,onError);
+				loader.load(requestData);
+			};
+			var saveFile:Function = function():void
+			{
+				var file:FileReference = new FileReference();
+				file.save(video,app.projectName() + ".mp4");
+				releaseVideo(false);
+			};
+			var releaseVideo:Function = function(log:Boolean = true):void
+			{
+				video = null;
+			};
+			video = myEncoder.getVideo();
+			if(app.user_id == "")
+			{
+				DialogBox.close("录制完成","点击按钮下载",null,"下载",app.stage,saveFile,releaseVideo,null,true);
+			}
+			else
+			{
+				DialogBox.close("录制完成","点击按钮提交上传到服务器",null,"提交",app.stage,saveAndUploadFile,releaseVideo,null,true);
+			}
+		}
+	}
+	// per seconds save
 	public function saveRecording():void {
+		var bmd:BitmapData;
+		var bounds:Rectangle;
+		var pixels:ByteArray;
+		var i:int;
 		//any captured frames that haven't been written to file yet are written here
 		if (videoFrames.length>videoPosition) {
 			for (var b:int=0; b<20; b++) {
 				if (videoPosition>=videoFrames.length) {
 					break;
 				}
+				
+//				//MP4编码
+//				bmd = this.videoFrames[this.videoPosition];
+//				bounds = new Rectangle(0, 0, bmd.width, bmd.height);
+//				pixels = bmd.getPixels(bounds);
+//				videoSounds[videoPosition].position = 0;
+//				
+//				try
+//				{
+//					this.framesAudioData.push(videoSounds[videoPosition]);
+//					this.framesVideoData.push(pixels);
+//					//						myEncoder.addAudioFrame(videoSounds[videoPosition]);
+//					//						myEncoder.addVideoFrame(pixels);
+//				}
+//				catch (error:Error)
+//				{
+//					DialogBox.close("add Frame error",error.message,null,"ok",app.stage,null,null,null,false);
+//					
+//				}
+				
+				//flv编码
 				baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
+				
 				videoFrames[videoPosition]=null;
 				videoSounds[videoPosition]=null;
 				videoPosition++;
@@ -484,6 +676,26 @@ public class ScratchRuntime {
 			timeout = setTimeout(saveRecording, 1);
 			return;
 		}
+		//mp4 encode
+		if (this.framesVideoData.length > this.currentEncodedIndex)
+		{
+			app.addLoadProgressBox("正在编码...");
+			i = this.currentEncodedIndex;
+			this.myEncoder.addAudioFrame(this.framesAudioData[i]);
+			this.myEncoder.addVideoFrame(this.framesVideoData[i]);
+			//				app.log(LogLevel.TRACK,"mp4 audio",this.framesAudioData[i]);
+			//				app.log(LogLevel.TRACK,"mp4 video",this.framesVideoData[i]);
+			i = (i + 1);
+			if (this.app.lp)
+			{
+				this.app.lp.setProgress(Math.min(i / this.framesVideoData.length, 1));
+			}
+			clearTimeout(this.timeout);
+			this.timeout = setTimeout(this.saveRecording, 1);
+			this.currentEncodedIndex = i;
+			return;
+		}
+		
 		var seconds:Number = videoFrames.length/videoFramerate;
 		app.removeLoadProgressBox();
 		baFlvEncoder.updateDurationMetadata();
@@ -495,22 +707,13 @@ public class ScratchRuntime {
 		videoSounds = [];
 		micBytes = null;
 		micPosition=0;
-		var video:ByteArray;
-		video = baFlvEncoder.byteArray;
-		baFlvEncoder.kill();
-		function saveFile():void {
-			var file:FileReference = new FileReference();
-			file.save(video, "movie.flv");
-			Scratch.app.log(LogLevel.TRACK, "Video downloaded", {projectID: app.projectID, seconds: roundToTens(seconds), megabytes: roundToTens(video.length/1000000)});
-			var specEditor:SharingSpecEditor = new SharingSpecEditor();
-			DialogBox.close("Playing and Sharing Your Video",null,specEditor,"Back to Scratch");
-		    releaseVideo(false);
-        }
-		function releaseVideo(log:Boolean = true):void {
-			if (log) Scratch.app.log(LogLevel.TRACK, "Video canceled", {projectID: app.projectID, seconds: roundToTens(seconds), megabytes: roundToTens(video.length/1000000)});
-            video = null;
-		}
-		DialogBox.close("Video Finished!","To save, click the button below.",null,"Save and Download",app.stage,saveFile,releaseVideo,null,true);
+		currentEncodedIndex = 0;
+		this.framesVideoData = [];
+		this.framesAudioData = [];
+		var video_flv:ByteArray = baFlvEncoder.byteArray;
+		baFlvEncoder.kill();	
+		myEncoder.finish();
+		//			Scratch.app.log(LogLevel.TRACK, "Video save", {seconds: roundToTens(seconds), bytes_mp4: roundToTens(video.length)});
 	}
 	
 	private function roundToTens(x:Number):Number {
@@ -564,8 +767,16 @@ public class ScratchRuntime {
 		}
 	}
 
-	public function startKeyHats(ch:int):void {
-		var keyName:String = getKeyName(ch);
+	public function startKeyHats(keyCode:int):void {
+		var keyName:String = null;
+		switch (keyCode) {
+			case Keyboard.LEFT: keyName = 'left arrow'; break;
+			case Keyboard.RIGHT: keyName = 'right arrow'; break;
+			case Keyboard.UP: keyName = 'up arrow'; break;
+			case Keyboard.DOWN: keyName = 'down arrow'; break;
+			case Keyboard.SPACE: keyName = 'space'; break;
+			default: keyName = String.fromCharCode(keyCode).toLowerCase(); break;
+		}
 		function startMatchingKeyHats(stack:Block, target:ScratchObj):void {
 			if (stack.op == 'whenKeyPressed') {
 				var k:String = stack.args[0].argValue;
@@ -785,7 +996,7 @@ public class ScratchRuntime {
 			fileName = file.name;
 			data = file.data;
 			if (app.stagePane.isEmpty()) doInstall();
-			else DialogBox.confirm('Replace contents of the current project?', app.stage, doInstall);
+			else DialogBox.confirm('确定要替换项目吗?', app.stage, doInstall);
 		}
 		function doInstall(ignore:* = null):void {
 			installProjectFromFile(fileName, data);
@@ -809,6 +1020,7 @@ public class ScratchRuntime {
 		app.loadInProgress = true;
 		installProjectFromData(data);
 		app.setProjectName(fileName);
+		app.uuid = UUID.create();
 	}
 
 	public function installProjectFromData(data:ByteArray, saveForRevert:Boolean = true):void {
@@ -947,55 +1159,49 @@ public class ScratchRuntime {
 	// Keyboard input handling
 	//------------------------------
 
+	public function get shiftIsDown():Boolean {
+		return keyIsDown[Keyboard.SHIFT];
+	}
+
+	// see BitmapEdit.cropToSelection()
+	public function set shiftIsDown(value:Boolean):void {
+		keyIsDown[Keyboard.SHIFT] = value;
+	}
+
 	public function keyDown(evt:KeyboardEvent):void {
-		shiftIsDown = evt.shiftKey;
-		var ch:int = getKeyCodeFromEvent(evt);
+		var ch:int = getCharCode(evt);
 		if (!(evt.target is TextField)) startKeyHats(ch);
 		keyIsDown[ch] = true;
 	}
 
 	public function keyUp(evt:KeyboardEvent):void {
-		shiftIsDown = evt.shiftKey;
-		var ch:int = getKeyCodeFromEvent(evt);
-		keyIsDown[ch] = false;
+		var ch:int = getCharCode(evt);
+		delete keyIsDown[ch];
 	}
 
 	private function clearKeyDownArray():void {
 		keyIsDown.length = 0;
 	}
 
-	private static function getKeyCodeFromEvent(event:KeyboardEvent):int {
-		var charCode:int = event.charCode;
-		if (charCode == 0) {
-			switch (event.keyCode) {
-				case Keyboard.LEFT: return SCRATCH_ARROW_LEFT;
-				case Keyboard.RIGHT: return SCRATCH_ARROW_RIGHT;
-				case Keyboard.UP: return SCRATCH_ARROW_UP;
-				case Keyboard.DOWN: return SCRATCH_ARROW_DOWN;
-			}
-		}
-		return String.fromCharCode(charCode).toLowerCase().charCodeAt(0);
-	}
-
-	public static function getKeyCode(keyName:String):int {
-		switch (keyName) {
-			case 'left arrow': return SCRATCH_ARROW_LEFT;
-			case 'right arrow': return SCRATCH_ARROW_RIGHT;
-			case 'up arrow': return SCRATCH_ARROW_UP;
-			case 'down arrow': return SCRATCH_ARROW_DOWN;
-			case 'space': return Keyboard.SPACE;
-		}
-		return keyName.charCodeAt(0);
-	}
-
-	public static function getKeyName(keyCode:int):String {
-		switch (keyCode) {
-			case SCRATCH_ARROW_LEFT: return 'left arrow';
-			case SCRATCH_ARROW_RIGHT: return 'right arrow';
-			case SCRATCH_ARROW_UP: return 'up arrow';
-			case SCRATCH_ARROW_DOWN: return 'down arrow';
-			case Keyboard.SPACE: return 'space';
-			default: return String.fromCharCode(keyCode);
+	// Get a normalized "ASCII" value for the keyCode pressed:
+	// - Number keys on the numeric keypad will be mapped to ASCII digits
+	// - Other keyCodes will pass through as-is. This means:
+	//   - Letter keys will return the upper-case ASCII value (note: lower-case ASCII overlaps with other keyCodes)
+	//   - Number keys not on the numeric keypad will return the ASCII value of the corresponding digit
+	//   - Other keys (for example, arrows) will have meaningless but unique ASCII codes, useful for "any" key detection
+	private static function getCharCode(evt:KeyboardEvent):int {
+		switch (evt.keyCode) {
+			case Keyboard.NUMPAD_0: return Keyboard.NUMBER_0;
+			case Keyboard.NUMPAD_1: return Keyboard.NUMBER_1;
+			case Keyboard.NUMPAD_2: return Keyboard.NUMBER_2;
+			case Keyboard.NUMPAD_3: return Keyboard.NUMBER_3;
+			case Keyboard.NUMPAD_4: return Keyboard.NUMBER_4;
+			case Keyboard.NUMPAD_5: return Keyboard.NUMBER_5;
+			case Keyboard.NUMPAD_6: return Keyboard.NUMBER_6;
+			case Keyboard.NUMPAD_7: return Keyboard.NUMBER_7;
+			case Keyboard.NUMPAD_8: return Keyboard.NUMBER_8;
+			case Keyboard.NUMPAD_9: return Keyboard.NUMBER_9;
+			default: return evt.keyCode;
 		}
 	}
 

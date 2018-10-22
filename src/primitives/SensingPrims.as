@@ -25,6 +25,7 @@
 package primitives {
 	import flash.display.*;
 	import flash.geom.*;
+	import flash.ui.Keyboard;
 	import flash.utils.Dictionary;
 	import blocks.Block;
 	import interpreter.*;
@@ -229,7 +230,15 @@ public class SensingPrims {
 			}
 			return false;
 		}
-		var ch:int = ScratchRuntime.getKeyCode(key);
+		var ch:int;
+		switch (key) {
+			case 'left arrow': ch = Keyboard.LEFT; break;
+			case 'right arrow': ch = Keyboard.RIGHT; break;
+			case 'up arrow': ch = Keyboard.UP; break;
+			case 'down arrow': ch = Keyboard.DOWN; break;
+			case 'space': ch = Keyboard.SPACE; break;
+			default: ch = key.toUpperCase().charCodeAt(0); break;
+		}
 		return app.runtime.keyIsDown[ch] || false;
 	}
 

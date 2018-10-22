@@ -68,6 +68,6 @@ public class DrawProperties {
 	public var filledShape:Boolean = false;
 
 	// font
-	public var fontName:String = 'Helvetica';
+	public var fontName:String = '微软雅黑';
 
 }}
