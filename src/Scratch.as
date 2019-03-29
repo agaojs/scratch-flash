@@ -215,15 +215,16 @@ public class Scratch extends Sprite {
 		stage.addEventListener(Event.RESIZE, onResize);
 
 		setEditMode(startInEditMode());
-
 		if (loaderInfo.parameters["showOnly"])
 		{
 			setEditMode(loaderInfo.parameters["showOnly"] != "true");
 		}
-		
-		
-		if (editMode) runtime.installNewProject();
-		else runtime.installEmptyProject();
+		if (editMode) 
+		{
+			runtime.installNewProject();
+		} else {			
+			runtime.installEmptyProject();
+		}
 		
 		
 		//读取用户信息
@@ -237,9 +238,7 @@ public class Scratch extends Sprite {
 			user_id="";
 			DialogBox.notify('提示','您还没有登录，云端功能将无法使用哦~', stage);
 		}
-		
-		
-
+				
 		
 		fixLayout();
 		//Analyze.collectAssets(0, 119110);
@@ -258,57 +257,28 @@ public class Scratch extends Sprite {
 			log(LogLevel.DEBUG,'init project',{project:project_url});
 			loadSingleGithubURL(project_url);
 		}
-		//auth();
 		preloadEncoder();
 		
-		logMessage("user_id",user_id);
-		logMessage("project_name",project_name);
-		logMessage("project_url",project_url);
-		
-		externalCall("initialized",null);
+		logMessage("user_id", user_id);
+		logMessage("project_name", project_name);
+		logMessage("project_url", project_url);
+		 
+		externalCall("initialized", null);
 		app.log(LogLevel.TRACK,"初始化完成，当前占用内存(MB)",System.totalMemory / 1024 / 1024);
 	}
-	private function auth():void{
-		var url:String = "https://213.name/api/scratchAuth.php?id=16";
-		var requestData:URLRequest = new URLRequest(url); 
-		var loader:URLLoader = new URLLoader();
-		requestData.method = URLRequestMethod.GET;
-		
-		var onError = function (e:Event) : void
-		{
-			DialogBox.notify("关于",
-				'\n验证权限失败' + e.toString() +
-				'\n请联系开发者 QQ 25933204', stage);
-			
-		}
-		loader.addEventListener(ErrorEvent.ERROR, onError);
-		loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
-		loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
-		loader.addEventListener(AsyncErrorEvent.ASYNC_ERROR, onError);
-		
-		loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-			log(LogLevel.TRACK,"响应",loader.data);
-			if("" == loader.data){
-				DialogBox.notify("错误",
-					'\nScratch未取得授权' +
-					'\n请联系开发者 QQ 25933204', stage);
-			}
-		});
-		loader.load(requestData);
-	}
+
 	//预加载MP4编码插件
 	private function preloadEncoder() : void
 	{
-		var url:* = undefined;
-		var loader:* = undefined;
-		var con:* = undefined;
-		var onError:* = undefined;
+		var url:URLRequest = null;
+		var loader:Loader = null;
+		var con:LoaderContext = null;
 		if(new Server().URLs["mp4"] || new Server().URLs["mp4"] != "null")
 		{
 			url = new URLRequest(new Server().URLs["mp4"] + "FW_SWFBridge_ffmpeg.swf?v=24");
 			loader = new Loader();
 			con = new LoaderContext(false,new ApplicationDomain(null),null);
-			onError = function(e:Event):void
+			var onError:Function = function(e:Event):void
 			{
 				app.jsThrowError("load mp4 encode module error: " + e.toString());
 				this.mp4encode = false;
@@ -344,7 +314,7 @@ public class Scratch extends Sprite {
 		}
 	}
 	
-	public function alert(msg:String){
+	public function alert(msg:String):void{
 		externalCall('alert', null, msg);
 	}
 
@@ -357,17 +327,11 @@ public class Scratch extends Sprite {
 	}
 
 	//在线加载项目
-	private function loadSingleGithubURL(url:String, name=""):void {
-		
-//		if(url.length == 36){
-//			uuid = url;
-//		}else{
-//			uuid = UUID.create();
-//		}
-		
-//		url = new Server().URLs['upload'] + url + ".sb2";
+	private function loadSingleGithubURL(url:String, name:String=""):void {
 		var index:int = url.indexOf('?');
-		if (index > 0) url = url.slice(0, index);
+		if (index > 0) {
+			url = url.slice(0, index);
+		}			
 		index = url.lastIndexOf('/');
 		if (index > 0) {
 			url = url.slice(0, index) + escape(url.slice(index));
@@ -381,14 +345,17 @@ public class Scratch extends Sprite {
 		url = url + "?v=" + Math.random();
 		
 		log(LogLevel.DEBUG,'尝试载入网络项目',{url:url, uuid:uuid});
-		function handleComplete(e:Event):void {
+		function handleComplete(e:Event):void {	
 			runtime.installProjectFromData(sbxLoader.data);
 			var newProjectName:String = url;
-			if(name!=""){ newProjectName = name}else{newProjectName="未命名"}
+			if (name != ""){ 
+				newProjectName = name
+			} else {
+				newProjectName="未命名"
+			}
 			setProjectName(newProjectName);
 			stagePane.info.name = newProjectName;
-			externalCall('projectLoaded', null);
-			
+			externalCall('projectLoaded', null);			
 		}
 		
 		
@@ -402,11 +369,12 @@ public class Scratch extends Sprite {
 				Scratch.app.log(LogLevel.WARNING, 'Reloading policy file', {policy: policyFileURL, initiator: url});
 			}
 		}
+		
 		function handleError(e:ErrorEvent):void {
 			onCallServerError(url, e);
 			jsThrowError('Failed to load SBX: ' + e.toString());
 			alert("项目加载失败");
-//			DialogBox.notify('错误','加载项目失败', stage);
+			//DialogBox.notify('错误','加载项目失败', stage);
 			removeLoadProgressBox();
 		}
 		
@@ -425,7 +393,7 @@ public class Scratch extends Sprite {
 		sbxLoader.addEventListener(Event.COMPLETE, handleComplete);
 		sbxLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, handleError);
 		sbxLoader.addEventListener(IOErrorEvent.IO_ERROR, handleError);
-		sbxLoader.addEventListener(ProgressEvent.PROGRESS, function (event:ProgressEvent){
+		sbxLoader.addEventListener(ProgressEvent.PROGRESS, function (event:ProgressEvent):void{
 			var percent:* = event.bytesLoaded / event.bytesTotal;
 			lp.setProgress(percent);
 		});
@@ -595,7 +563,8 @@ public class Scratch extends Sprite {
 				var versionParts:Array = versionString.split(',');
 				var majorVersion:int = parseInt(versionParts[0]);
 				var minorVersion:int = parseInt(versionParts[1]);
-				if ((majorVersion > 11 || (majorVersion == 11 && minorVersion >= 7)) && !isArmCPU && Capabilities.cpuArchitecture == 'x86') {
+				if ((majorVersion > 11 || (majorVersion == 11 && minorVersion >= 7))
+					&& !isArmCPU && Capabilities.cpuArchitecture == 'x86') {
 					render3D = new DisplayObjectContainerIn3D();
 					render3D.setStatusCallback(handleRenderCallback);
 					return;
@@ -941,7 +910,8 @@ public class Scratch extends Sprite {
 		show(stagePart); // put stage in front
 		tabsPart.selectTab(tabName);
 		lastTab = tabName;
-		if (saveNeeded) setSaveNeeded(true); // save project when switching tabs, if needed (but NOT while loading!)
+		if (saveNeeded) // save project when switching tabs, if needed (but NOT while loading!)
+			setSaveNeeded(true); 
 	}
 
 	public function installStage(newStage:ScratchStage):void {
@@ -987,7 +957,6 @@ public class Scratch extends Sprite {
 	// -----------------------------
 	// UI Modes and Resizing
 	//------------------------------
-
 	public function setEditMode(newMode:Boolean):void {
 		Menu.removeMenusFrom(stage);
 		editMode = newMode;
@@ -1105,7 +1074,8 @@ public class Scratch extends Sprite {
 		updateContentArea(tabsPart.x, contentY, w - tabsPart.x - 6, h - contentY - 5, h);
 	}
 
-	protected function updateContentArea(contentX:int, contentY:int, contentW:int, contentH:int, fullH:int):void {
+	protected function updateContentArea(contentX:int, contentY:int, 
+			contentW:int, contentH:int, fullH:int):void {
 		imagesPart.x = soundsPart.x = scriptsPart.x = contentX;
 		imagesPart.y = soundsPart.y = scriptsPart.y = contentY;
 		imagesPart.setWidthHeight(contentW, contentH);
@@ -1237,7 +1207,8 @@ public class Scratch extends Sprite {
 		m.addItem('保存项目到电脑', exportProjectToFile);
 		m.addItem('修改项目名称',changeProjectTitle);
 		
-		if (runtime.recording || runtime.ready==ReadyLabel.COUNTDOWN || runtime.ready==ReadyLabel.READY) {
+		if (runtime.recording || runtime.ready==ReadyLabel.COUNTDOWN 
+			|| runtime.ready==ReadyLabel.READY) {
 			m.addItem('停止录像', runtime.stopVideo);
 		} else {
 			m.addItem('录屏炫耀交作业', runtime.exportToVideo);
@@ -1345,11 +1316,10 @@ public class Scratch extends Sprite {
 		d.addTitle('从URL加载项目');
 		d.addField('url', 500);
 		d.addAcceptCancelButtons('确定');
-		d.showOnStage(app.stage);
-		
+		d.showOnStage(app.stage);		
 	}
 	
-	function myUrlEncode(str:String,code:String):String
+	public function myUrlEncode(str:String,code:String):String
 	{
 		var stringresult:String = "";
 		var byte:ByteArray =new ByteArray();
@@ -1373,7 +1343,8 @@ public class Scratch extends Sprite {
 			return;
 		}
 		checkUUID();
-		Scratch.app.log(LogLevel.TRACK, "正在上传项目", {user_id: app.user_id, uuid: app.uuid, projname: projectName()});
+		Scratch.app.log(LogLevel.TRACK, "正在上传项目", 
+			{user_id: app.user_id, uuid: app.uuid, projname: projectName()});
 //		externalCall("fileUploading",null,1);
 		function squeakSoundsConverted():void {
 			scriptsPane.saveScripts(false);
@@ -1407,10 +1378,11 @@ public class Scratch extends Sprite {
 			
 			saveScreenshot();
 			
-			var onError = function (e:Event) : void
+			var onError:Function = function (e:Event) : void
 			{
 				jsThrowError('Failed upload: ' + e.toString());
-				DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试", app.stage, saveProject, null, null, true);
+				DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试",
+					app.stage, saveProject, null, null, true);
 			}
 			loader.addEventListener(ErrorEvent.ERROR, onError);
 			loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
@@ -1435,7 +1407,8 @@ public class Scratch extends Sprite {
 	}
 	
 	public function saveScreenshot():void{
-		Scratch.app.log(LogLevel.TRACK, "正在上传缩略图", {user_id: app.user_id, uuid: app.uuid, projname: projectName()});
+		Scratch.app.log(LogLevel.TRACK, "正在上传缩略图", 
+			{user_id: app.user_id, uuid: app.uuid, projname: projectName()});
 		//缩略图
 		var stage:* = stagePane;
 		var data:BitmapData = new BitmapData(stage.width,stage.height,true,0);
@@ -1549,13 +1522,13 @@ public class Scratch extends Sprite {
 		projIO.convertSqueakSounds(stagePane, squeakSoundsConverted);
 	}
 	
-	public function checkUUID(){
+	public function checkUUID():void{
 		var url:String = new Server().URLs['siteAPI']+"check?uuid="+app.uuid;
 		var requestData:URLRequest = new URLRequest(url); 
 		var loader:URLLoader = new URLLoader();
 		requestData.method = URLRequestMethod.GET;
 		
-		var onError = function (e:Event) : void
+		var onError:Function = function (e:Event) : void
 		{
 			jsThrowError('Failed check uuid: '+ url + "\n" + e.toString());
 		}

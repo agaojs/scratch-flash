@@ -323,11 +323,13 @@ public class ScratchRuntime {
 						scaled*=0.5;
 					}
 					var d:BitmapData = app.stagePane.saveScreenData();
-					f.draw(d, new Matrix( scaled, 0, 0, scaled, app.stagePane.localToGlobal(new Point(0, 0)).x*scale, app.stagePane.localToGlobal(new Point(0, 0)).y*scale));
+					f.draw(d, new Matrix( scaled, 0, 0, scaled, app.stagePane.localToGlobal(new Point(0, 0)).x*scale, 
+						app.stagePane.localToGlobal(new Point(0, 0)).y*scale));
 				}
 				else if (app.stagePane.videoImage) app.stagePane.videoImage.visible = true;
 				if (showCursor && app.gh.mouseIsDown) {
-					f.draw(circle,new Matrix(scale,0,0,scale,(app.stage.mouseX-circle.width/2.0)*scale,(app.stage.mouseY-circle.height/2.0)*scale));
+					f.draw(circle,new Matrix(scale,0,0,scale,(app.stage.mouseX-circle.width/2.0)*scale,
+						(app.stage.mouseY-circle.height/2.0)*scale));
 				}
 				if (showCursor) {
 					f.draw(cursor,new Matrix(scale,0,0,scale,app.stage.mouseX*scale,app.stage.mouseY*scale));
@@ -345,12 +347,15 @@ public class ScratchRuntime {
 						scaler*=0.5;
 					}
 					var e:BitmapData = app.stagePane.saveScreenData();
-					if (scaler==1) f.copyPixels(e, e.rect,new Point(app.stagePane.localToGlobal(new Point(0, 0)).x, app.stagePane.localToGlobal(new Point(0, 0)).y));
-					else f.draw(e, new Matrix( scaler, 0, 0, scaler, app.stagePane.localToGlobal(new Point(0, 0)).x, app.stagePane.localToGlobal(new Point(0, 0)).y));
+					if (scaler==1) f.copyPixels(e, e.rect,new Point(app.stagePane.localToGlobal(new Point(0, 0)).x, 
+						app.stagePane.localToGlobal(new Point(0, 0)).y));
+					else f.draw(e, new Matrix( scaler, 0, 0, scaler, app.stagePane.localToGlobal(new Point(0, 0)).x,
+						app.stagePane.localToGlobal(new Point(0, 0)).y));
 				}
 				else if (app.stagePane.videoImage) app.stagePane.videoImage.visible = true;
 				if (showCursor && app.gh.mouseIsDown) {
-					f.copyPixels(circle.bitmapData,circle.bitmapData.rect,new Point(app.stage.mouseX-circle.width/2.0,app.stage.mouseY-circle.height/2.0));
+					f.copyPixels(circle.bitmapData,circle.bitmapData.rect,new Point(app.stage.mouseX-circle.width/2.0,
+						app.stage.mouseY-circle.height/2.0));
 				}
 				if (showCursor) {
 					f.draw(cursor,new Matrix(1,0,0,1,app.stage.mouseX,app.stage.mouseY));
@@ -360,7 +365,8 @@ public class ScratchRuntime {
 		else {
 			f = app.stagePane.saveScreenData();
 			if (showCursor && app.gh.mouseIsDown) {
-				f.copyPixels(circle.bitmapData,circle.bitmapData.rect,new Point(app.stagePane.mouseX-circle.width/2.0,app.stagePane.mouseY-circle.height/2.0));
+				f.copyPixels(circle.bitmapData,circle.bitmapData.rect,new Point(app.stagePane.mouseX-circle.width/2.0,
+					app.stagePane.mouseY-circle.height/2.0));
 			}
 			if (showCursor) {
 				f.draw(cursor,new Matrix(1,0,0,1,app.stagePane.scratchMouseX()+240,-app.stagePane.scratchMouseY()+180));
@@ -874,7 +880,8 @@ public class ScratchRuntime {
 			var threshold:Number = interp.numarg(hat, 1);
 			if (('loudness' == sensorName && soundLevel() > threshold) ||
 					('timer' == sensorName && timer() > threshold) ||
-					('video motion' == sensorName && target.visible && VideoMotionPrims.readMotionSensor('motion', target) > threshold)) {
+					('video motion' == sensorName && target.visible 
+						&& VideoMotionPrims.readMotionSensor('motion', target) > threshold)) {
 				if (triggeredHats.indexOf(hat) == -1) { // not already trigged
 					// only start the stack if it is not already running
 					if (!interp.isRunning(hat, target)) interp.toggleThread(hat, target);
@@ -904,7 +911,8 @@ public class ScratchRuntime {
 		}
 	}
 
-	private function processExtensionReporter(hat:Block, target:ScratchObj, extName:String, op:String, finalArgs:Array):void {
+	private function processExtensionReporter(hat:Block, target:ScratchObj, 
+											  extName:String, op:String, finalArgs:Array):void {
 		// TODO: Is it safe to do this in a callback, or must it happen before we return from startEdgeTriggeredHats?
 		function triggerHatBlock(triggerCondition:Boolean):void {
 			if (triggerCondition) {

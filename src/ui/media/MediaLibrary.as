@@ -37,13 +37,13 @@ public class MediaLibrary extends Sprite {
 	private const titleFormat:TextFormat = new TextFormat(CSS.font, 24, 0x444143);
 
 	private static const backdropCategories:Array = [
-		'All', 'Indoors', 'Outdoors', 'Other'];
+		'All', 'Custom', 'Indoors', 'Outdoors', 'Other'];
 	private static const costumeCategories:Array = [
-		'All', 'Animals', 'Fantasy', 'Letters', 'People', 'Things', 'Transportation'];
+		'All', 'Custom', 'Animals', 'Fantasy', 'Letters', 'People', 'Things', 'Transportation'];
 	private static const extensionCategories:Array = [
 		'All', 'Hardware'];
 	private static const soundCategories:Array = [
-		'All', 'Animal', 'Effects', 'Electronic', 'Human', 'Instruments',
+		'All', 'Custom', 'Animal', 'Effects', 'Electronic', 'Human', 'Instruments',
 		'Music Loops', 'Musical Notes', 'Percussion', 'Vocals'];
 
 	private static const backdropThemes:Array = [
