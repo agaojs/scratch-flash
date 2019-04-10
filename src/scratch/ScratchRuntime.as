@@ -211,7 +211,8 @@ public class ScratchRuntime {
 					}
 					catch(error:Error)
 					{
-						DialogBox.close("runtime error",error.message,null,"ok",app.stage,null,null,null,false);
+						DialogBox.close("runtime error",error.message,null,"ok",
+							app.stage,null,null,null,false);
 						
 					}
 					
@@ -347,14 +348,17 @@ public class ScratchRuntime {
 						scaler*=0.5;
 					}
 					var e:BitmapData = app.stagePane.saveScreenData();
-					if (scaler==1) f.copyPixels(e, e.rect,new Point(app.stagePane.localToGlobal(new Point(0, 0)).x, 
+					if (scaler==1) f.copyPixels(e, e.rect,
+						new Point(app.stagePane.localToGlobal(new Point(0, 0)).x, 
 						app.stagePane.localToGlobal(new Point(0, 0)).y));
-					else f.draw(e, new Matrix( scaler, 0, 0, scaler, app.stagePane.localToGlobal(new Point(0, 0)).x,
+					else f.draw(e, new Matrix( scaler, 0, 0, scaler,
+						app.stagePane.localToGlobal(new Point(0, 0)).x,
 						app.stagePane.localToGlobal(new Point(0, 0)).y));
 				}
 				else if (app.stagePane.videoImage) app.stagePane.videoImage.visible = true;
 				if (showCursor && app.gh.mouseIsDown) {
-					f.copyPixels(circle.bitmapData,circle.bitmapData.rect,new Point(app.stage.mouseX-circle.width/2.0,
+					f.copyPixels(circle.bitmapData,circle.bitmapData.rect,
+						new Point(app.stage.mouseX-circle.width/2.0,
 						app.stage.mouseY-circle.height/2.0));
 				}
 				if (showCursor) {
@@ -365,11 +369,13 @@ public class ScratchRuntime {
 		else {
 			f = app.stagePane.saveScreenData();
 			if (showCursor && app.gh.mouseIsDown) {
-				f.copyPixels(circle.bitmapData,circle.bitmapData.rect,new Point(app.stagePane.mouseX-circle.width/2.0,
+				f.copyPixels(circle.bitmapData,circle.bitmapData.rect,
+					new Point(app.stagePane.mouseX-circle.width/2.0,
 					app.stagePane.mouseY-circle.height/2.0));
 			}
 			if (showCursor) {
-				f.draw(cursor,new Matrix(1,0,0,1,app.stagePane.scratchMouseX()+240,-app.stagePane.scratchMouseY()+180));
+				f.draw(cursor,new Matrix(1,0,0,1,app.stagePane.scratchMouseX()+240,
+					-app.stagePane.scratchMouseY()+180));
 			}
 		}
 		while (videoSounds.length>videoFrames.length) {
@@ -485,7 +491,8 @@ public class ScratchRuntime {
 		function startCountdown():void {
 			startVideo(specEditor);
 		}
-		DialogBox.close("录制视频",null,specEditor,"开始",app.stage,startCountdown);
+		DialogBox.close("录制视频", null, specEditor, "开始", 
+			app.stage, startCountdown);
 	}
 	
 	public function stopVideo():void {
@@ -568,7 +575,8 @@ public class ScratchRuntime {
 		if(event.code == "ready")
 		{
 			waitAndStart();
-			myEncoder.start(videoFramerate,FWVideoEncoder.AUDIO_STEREO,false,videoWidth,videoHeight,1000000,44100,128000);
+			myEncoder.start(videoFramerate,FWVideoEncoder.AUDIO_STEREO,false,
+				videoWidth,videoHeight,1000000,44100,128000);
 			myEncoder.setAudioRealtime(true);
 		}
 		if(event.code == "encoded")
@@ -576,7 +584,8 @@ public class ScratchRuntime {
 			saveAndUploadFile = function():void
 			{
 				app.checkUUID();
-				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, uuid: app.uuid, projname: app.projectName()});
+				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id,
+					uuid: app.uuid, projname: app.projectName()});
 				
 				var posturl:String = new Server().URLs['siteAPI'] + "upload";
 				
@@ -594,14 +603,12 @@ public class ScratchRuntime {
 				var loader:URLLoader = new URLLoader(); 
 				loader.dataFormat = URLLoaderDataFormat.BINARY;
 				
-				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-					
-//					var res:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+				loader.addEventListener(Event.COMPLETE, function (e:Event):void {					
+					//var res:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
 					app.externalCall("videoUploaded",null, app.uuid);
 					DialogBox.close("提示","上传成功",null,"关闭");	
-//					app.log(LogLevel.TRACK,"响应",loader.data);
-//					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-							
+					//app.log(LogLevel.TRACK,"响应",loader.data);
+					//var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);							
 				});
 				
 				app.saveScreenshot();

@@ -60,7 +60,8 @@ public class DialogBox extends Sprite {
 		addEventListener(FocusEvent.KEY_FOCUS_CHANGE, focusChange);
 	}
 
-	public static function ask(question:String, defaultAnswer:String, stage:Stage = null, resultFunction:Function = null, context:Dictionary = null):void {
+	public static function ask(question:String, defaultAnswer:String, stage:Stage = null,
+			resultFunction:Function = null, context:Dictionary = null):void {
 		function done():void { if (resultFunction != null) resultFunction(d.fields['answer'].text) }
 		var d:DialogBox = new DialogBox(done);
 		d.addTitle(question);
@@ -70,7 +71,8 @@ public class DialogBox extends Sprite {
 		d.showOnStage(stage ? stage : Scratch.app.stage);
 	}
 
-	public static function confirm(question:String, stage:Stage = null, okFunction:Function = null, cancelFunction:Function = null, context:Dictionary = null):void {
+	public static function confirm(question:String, stage:Stage = null, okFunction:Function = null, 
+								   cancelFunction:Function = null, context:Dictionary = null):void {
 		var d:DialogBox = new DialogBox(okFunction, cancelFunction);
 		d.addTitle(question);
 		d.addAcceptCancelButtons('OK');
@@ -78,7 +80,9 @@ public class DialogBox extends Sprite {
 		d.showOnStage(stage ? stage : Scratch.app.stage);
 	}
 
-	public static function notify(title:String, msg:String, stage:Stage = null, leftJustify:Boolean = false, okFunction:Function = null, cancelFunction:Function = null, context:Dictionary = null):void {
+	public static function notify(title:String, msg:String, stage:Stage = null, leftJustify:Boolean = false,
+								  okFunction:Function = null, cancelFunction:Function = null, 
+								  context:Dictionary = null):void {
 		var d:DialogBox = new DialogBox(okFunction, cancelFunction);
 		d.leftJustify = leftJustify;
 		d.addTitle(title);
@@ -88,7 +92,10 @@ public class DialogBox extends Sprite {
 		d.showOnStage(stage ? stage : Scratch.app.stage);
 	}
 	
-	public static function close(title:String, msg:String = null, widget:DisplayObject = null, button:String = "OK", stage:Stage = null, okFunction:Function = null, cancelFunction:Function = null, context:Dictionary = null,inverted:Boolean = false):void {
+	public static function close(title:String, msg:String = null, widget:DisplayObject = null, 
+								 button:String = "OK", stage:Stage = null, okFunction:Function = null, 
+								 cancelFunction:Function = null, context:Dictionary = null,
+								 inverted:Boolean = false):void {
 		var d:DialogBox = new DialogBox(okFunction, cancelFunction);
 		d.leftJustify = false;
 		d.addTitle(title);
