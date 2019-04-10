@@ -638,21 +638,22 @@ public class ScratchStage extends ScratchObj {
 
 	public function getBitmapWithoutSpriteFilteredByColor(s:ScratchSprite, c:int):BitmapData {
 		commitPenStrokes(); // force any pen strokes to be rendered so they can be sensed
-
-		var bm1:BitmapData;
-		var mask:uint = 0x00F8F8F0;
-		if (Scratch.app.isIn3D) {
+		
+		var bm1:BitmapData = null;
+		if (!Scratch.app.isIn3D) {
+			// OLD code here
+			bm1 = bitmapWithoutSprite(s);
+		}
+		else {
 			SCRATCH::allow3d {
 				bm1 = Scratch.app.render3D.getOtherRenderedChildren(s, 1);
 			}
 		}
-		else {
-			// OLD code here
-			bm1 = bitmapWithoutSprite(s);
-		}
 
 		var bm2:BitmapData = new BitmapData(bm1.width, bm1.height, true, 0);
-		bm2.threshold(bm1, bm1.rect, bm1.rect.topLeft, '==', c, 0xFF000000, mask); // match only top five bits of each component
+		// match only top five bits of each component
+		var mask:uint = 0x00F8F8F0;
+		bm2.threshold(bm1, bm1.rect, bm1.rect.topLeft, '==', c, 0xFF000000, mask); 
 //		if(!testBM.parent) {
 //			testBM.filters = [new GlowFilter(0xFF00FF, 0.8)];
 //			stage.addChild(testBM);

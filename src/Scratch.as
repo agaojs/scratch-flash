@@ -135,6 +135,7 @@ public class Scratch extends Sprite {
 	
 	//用户信息
 	public var user_id:String="";
+	public var user_name:String="";
 	public var class_id:String="";
 	public var uuid:String = UUID.create();
 	public var project_name:String;
@@ -231,8 +232,8 @@ public class Scratch extends Sprite {
 		//读取用户信息
 		if (loaderInfo.parameters["uid"]){
 			user_id = loaderInfo.parameters["uid"];
+			user_name = loaderInfo.parameters["username"];
 			class_id = loaderInfo.parameters['cid'];
-			//user_name = loaderInfo.parameters["username"];
 		}
 		
 		if(user_id == "" || user_id == "undefined"){
@@ -1358,6 +1359,9 @@ public class Scratch extends Sprite {
 			parameters["uuid"] = app.uuid;
 			parameters["ftype"] = 2;//2-项目文件
 			parameters["project"] = projectName();
+			parameters["uid"] = app.user_id;
+			parameters["username"] = app.user_name;
+			parameters["cid"] = app.class_id;
 			
 			var requestData:URLRequest = new URLRequest(posturl);
 			requestData.data = UploadPostHelper.getPostData(uuid, zipData, "file", parameters); 
@@ -1418,7 +1422,7 @@ public class Scratch extends Sprite {
 		var url:String = new Server().URLs['siteAPI'] + "upload";
 		var parameters:Object = new Object();  
 		parameters["uuid"] = app.uuid;
-		parameters["ftype"] = 1;
+		parameters["ftype"] = 1; //文件类型：1缩略图
 		parameters["project"] = projectName();
 		var requestData:URLRequest = new URLRequest(url); 
 		requestData.data = UploadPostHelper.getPostData(uuid, jpg, "file", parameters);
