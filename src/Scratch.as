@@ -135,6 +135,7 @@ public class Scratch extends Sprite {
 	
 	//用户信息
 	public var user_id:String="";
+	public var class_id:String="";
 	public var uuid:String = UUID.create();
 	public var project_name:String;
 	public var logger:Log = new Log(16);
@@ -230,13 +231,13 @@ public class Scratch extends Sprite {
 		//读取用户信息
 		if (loaderInfo.parameters["uid"]){
 			user_id = loaderInfo.parameters["uid"];
-//			user_name = loaderInfo.parameters["username"];
-//			class_id = loaderInfo.parameters['cid'];
+			class_id = loaderInfo.parameters['cid'];
+			//user_name = loaderInfo.parameters["username"];
 		}
 		
-		if(user_id==""||user_id=="undefined"){
-			user_id="";
+		if(user_id == "" || user_id == "undefined"){
 			DialogBox.notify('提示','您还没有登录，云端功能将无法使用哦~', stage);
+			user_id = "";
 		}
 				
 		
@@ -252,7 +253,7 @@ public class Scratch extends Sprite {
 		
 		//初始化默认项目
 		var project_url:String = loaderInfo.parameters["project_url"];
-		if(project_url!="undefined"&&project_url!=""&&project_url!=null){
+		if(project_url != "undefined" && project_url != "" && project_url != null){
 			project_name = loaderInfo.parameters['project_name'];
 			log(LogLevel.DEBUG,'init project',{project:project_url});
 			loadSingleGithubURL(project_url);
@@ -327,7 +328,7 @@ public class Scratch extends Sprite {
 	}
 
 	//在线加载项目
-	private function loadSingleGithubURL(url:String, name:String=""):void {
+	private function loadSingleGithubURL(url:String, name:String="", cid:String=""):void {
 		var index:int = url.indexOf('?');
 		if (index > 0) {
 			url = url.slice(0, index);
@@ -1197,7 +1198,7 @@ public class Scratch extends Sprite {
 	}
 
 	protected function addFileMenuItems(b:*, m:Menu):void {
-		if(user_id!=""){
+		if(user_id != ""){
 			m.addItem('从云端载入项目',projectList);
 			m.addItem('保存项目到云端',saveProject);
 			m.addItem('邀请好友一起玩',shareProject);
@@ -1205,13 +1206,14 @@ public class Scratch extends Sprite {
 		m.addLine();
 		m.addItem('从电脑加载项目', runtime.selectProjectFile);
 		m.addItem('保存项目到电脑', exportProjectToFile);
-		m.addItem('修改项目名称',changeProjectTitle);
-		
-		if (runtime.recording || runtime.ready==ReadyLabel.COUNTDOWN 
-			|| runtime.ready==ReadyLabel.READY) {
-			m.addItem('停止录像', runtime.stopVideo);
-		} else {
-			m.addItem('录屏炫耀交作业', runtime.exportToVideo);
+		m.addItem('修改项目名称',changeProjectTitle);		
+		if(user_id != ""){
+			if (runtime.recording || runtime.ready==ReadyLabel.COUNTDOWN 
+				|| runtime.ready==ReadyLabel.READY) {
+				m.addItem('停止录像', runtime.stopVideo);
+			} else {
+				m.addItem('录屏炫耀交作业', runtime.exportToVideo);
+			}
 		}
 		if (canUndoRevert()) {
 			m.addLine();
@@ -1333,7 +1335,7 @@ public class Scratch extends Sprite {
 	
 	public function shareProject():void{
 		saveProject();
-		externalCall("shareProject",null, uuid);
+		externalCall("shareProject", null, uuid);
 	}
 	
 	//保存项目
@@ -1345,7 +1347,7 @@ public class Scratch extends Sprite {
 		checkUUID();
 		Scratch.app.log(LogLevel.TRACK, "正在上传项目", 
 			{user_id: app.user_id, uuid: app.uuid, projname: projectName()});
-//		externalCall("fileUploading",null,1);
+		//externalCall("fileUploading",null,1);
 		function squeakSoundsConverted():void {
 			scriptsPane.saveScripts(false);
 			var projectType:String = extensionManager.hasExperimentalExtensions() ? '.sbx' : '.sb2';
@@ -1356,7 +1358,7 @@ public class Scratch extends Sprite {
 			var posturl:String = new Server().URLs['siteAPI'] + "upload";;
 			var parameters:Object = new Object();  
 			parameters["uuid"] = app.uuid;
-			parameters["ftype"] = 2;
+			parameters["ftype"] = 2;//2-项目文件
 			parameters["project"] = projectName();
 			
 			var requestData:URLRequest = new URLRequest(posturl);
@@ -1369,10 +1371,10 @@ public class Scratch extends Sprite {
 			loader.dataFormat = URLLoaderDataFormat.BINARY;
 			
 			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-//				var res:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+				//var res:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
 				externalCall("projectUploaded",null, uuid);
-//				log(LogLevel.TRACK,"响应",loader.data);
-//				var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+				//log(LogLevel.TRACK,"响应",loader.data);
+				//var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
 				DialogBox.close("提示","上传成功",null,"关闭");
 			});
 			
@@ -1555,7 +1557,7 @@ public class Scratch extends Sprite {
 			var name:String = dialog.getField('项目名').replace(/^\s+|\s+$/g, '');
 			stagePane.info.name = name;
 			setProjectName(name);
-//			uuid = UUID.create();
+			//uuid = UUID.create();
 			if(cb != null){
 				cb();
 			}
