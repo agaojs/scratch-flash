@@ -1202,12 +1202,6 @@ public class Scratch extends Sprite {
 			m.addItem('从云端载入项目',projectList);
 			m.addItem('保存项目到云端',saveProject);
 			m.addItem('邀请好友一起玩',shareProject);
-		}
-		m.addLine();
-		m.addItem('从电脑加载项目', runtime.selectProjectFile);
-		m.addItem('保存项目到电脑', exportProjectToFile);
-		m.addItem('修改项目名称',changeProjectTitle);		
-		if(user_id != ""){
 			if (runtime.recording || runtime.ready==ReadyLabel.COUNTDOWN 
 				|| runtime.ready==ReadyLabel.READY) {
 				m.addItem('停止录像', runtime.stopVideo);
@@ -1215,6 +1209,10 @@ public class Scratch extends Sprite {
 				m.addItem('录屏炫耀交作业', runtime.exportToVideo);
 			}
 		}
+		m.addLine();
+		m.addItem('从电脑加载项目', runtime.selectProjectFile);
+		m.addItem('保存项目到电脑', exportProjectToFile);
+		m.addItem('修改项目名称',changeProjectTitle);		
 		if (canUndoRevert()) {
 			m.addLine();
 			m.addItem('Undo Revert', undoRevert);
