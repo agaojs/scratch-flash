@@ -1345,7 +1345,8 @@ public class Scratch extends Sprite {
 		}
 		checkUUID();
 		Scratch.app.log(LogLevel.TRACK, "正在上传项目", 
-			{user_id: app.user_id, uuid: app.uuid, projname: projectName()});
+			{user_id: app.user_id, uuid: app.uuid, projname: projectName(), 
+				username: app.user_name, class_id: app.class_id, ftype:2});
 		//externalCall("fileUploading",null,1);
 		function squeakSoundsConverted():void {
 			scriptsPane.saveScripts(false);
@@ -1359,9 +1360,9 @@ public class Scratch extends Sprite {
 			parameters["uuid"] = app.uuid;
 			parameters["ftype"] = 2;//2-项目文件
 			parameters["project"] = projectName();
-			parameters["uid"] = app.user_id;
 			parameters["username"] = app.user_name;
-			parameters["cid"] = app.class_id;
+			parameters["user_id"] = app.user_id;
+			parameters["class_id"] = app.class_id;
 			
 			var requestData:URLRequest = new URLRequest(posturl);
 			requestData.data = UploadPostHelper.getPostData(uuid, zipData, "file", parameters); 
@@ -1385,7 +1386,7 @@ public class Scratch extends Sprite {
 			var onError:Function = function (e:Event) : void
 			{
 				jsThrowError('Failed upload: ' + e.toString());
-				DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试",
+				DialogBox.close("错误", "请检查你的网络链接并重试！", null, "重试",
 					app.stage, saveProject, null, null, true);
 			}
 			loader.addEventListener(ErrorEvent.ERROR, onError);
@@ -1412,7 +1413,8 @@ public class Scratch extends Sprite {
 	
 	public function saveScreenshot():void{
 		Scratch.app.log(LogLevel.TRACK, "正在上传缩略图", 
-			{user_id: app.user_id, uuid: app.uuid, projname: projectName()});
+			{user_id: app.user_id, uuid: app.uuid, projname: projectName(), 
+				username: app.user_name, class_id: app.class_id, ftype:2});
 		//缩略图
 		var stage:* = stagePane;
 		var data:BitmapData = new BitmapData(stage.width,stage.height,true,0);
@@ -1424,6 +1426,9 @@ public class Scratch extends Sprite {
 		parameters["uuid"] = app.uuid;
 		parameters["ftype"] = 1; //文件类型：1缩略图
 		parameters["project"] = projectName();
+		parameters["username"] = app.user_name;
+		parameters["user_id"] = app.user_id;
+		parameters["class_id"] = app.class_id;
 		var requestData:URLRequest = new URLRequest(url); 
 		requestData.data = UploadPostHelper.getPostData(uuid, jpg, "file", parameters);
 		requestData.contentType = 'multipart/form-data; boundary=' + UploadPostHelper.getBoundary();

@@ -585,14 +585,18 @@ public class ScratchRuntime {
 			{
 				app.checkUUID();
 				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id,
-					uuid: app.uuid, projname: app.projectName()});
+					uuid: app.uuid, projname: app.projectName(), username: app.user_name, 
+					class_id: app.class_id, ftype:2});
 				
 				var posturl:String = new Server().URLs['siteAPI'] + "upload";
 				
 				var parameters:Object = new Object();  
 				parameters["uuid"] = app.uuid;
-				parameters["ftype"] = 3;
+				parameters["ftype"] = 3; //视频文件
 				parameters["project"] = app.projectName();
+				parameters["username"] = app.user_name;
+				parameters["user_id"] = app.user_id;
+				parameters["class_id"] = app.class_id;
 				
 				var requestData:URLRequest = new URLRequest(posturl);
 				requestData.data = UploadPostHelper.getPostData(app.uuid, video, "file", parameters); 
