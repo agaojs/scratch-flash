@@ -1039,7 +1039,7 @@ public class ScratchRuntime {
 		app.loadInProgress = true;
 		installProjectFromData(data);
 		app.setProjectName(fileName);
-		app.uuid = UUID.create();
+		//app.uuid = UUID.create();
 	}
 
 	public function installProjectFromData(data:ByteArray, saveForRevert:Boolean = true):void {
